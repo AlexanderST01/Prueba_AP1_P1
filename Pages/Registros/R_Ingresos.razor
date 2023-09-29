@@ -1,0 +1,151 @@
+﻿@inject IngresosBLL ingresosBLL
+@inject NotificationService notificationService
+@page "/RegistrosIngresos"
+@page "/RegistrosIngresos/{IngresosId:int}"
+@using Radzen;
+<h3>R_Ingresos</h3>
+<EditForm Model="ingresos" OnValidSubmit="Guardar">
+    <DataAnnotationsValidator />
+    <div class="card col-8">
+        <div class="card-header">
+             <div class="row">
+                <div class="col-3">
+                    <InputNumber class="form-control" @bind-Value="ingresos.IngresosId"></InputNumber>
+                </div>
+                <div class="col">
+                    <button type="button" class="btn btn-primary oi oi-magnifying-glass" @onclick="Buscar"></button>
+                </div>
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="form-group">
+                <label>Fecha</label>
+                <InputDate @bind-Value="ingresos.Fecha" class="form-control" ></InputDate>
+                <ValidationMessage For="@(() => ingresos.Fecha)" />
+            </div>
+            <div class="form-group">
+                <label>Concepto</label>
+                <InputTextArea @bind-Value="ingresos.Concepto" class="form-control" ></InputTextArea>
+                <ValidationMessage For="@(() => ingresos.Concepto)" />
+            </div>
+            <div class="form-group">
+                <label >Monto</label>
+                <InputNumber  @bind-Value="ingresos.Monto" class="form-control" ></InputNumber>
+                <ValidationMessage For="@(() => ingresos.Monto)" />
+            </div> 
+        </div>
+        <div class="card-footer">
+            <button class="btn btn-info" @onclick= "Nuevo" type="button">Nuevo</button>
+            <button class="btn btn-success" type="submit">Guardar</button>
+            <button class="btn btn-danger" @onclick="Eliminar" type="button">Eliminar</button>
+        </div>
+    </div>
+</EditForm>
+@code {
+    [Parameter]
+    public int IngresosId { get; set; }
+    public int options { get; set; }
+    public Ingresos ingresos = new();
+    public bool ingresosIdMenorCero = false;
+    public bool conceptoRepetido = false;
+    public bool montoMenorCero = false;
+
+    protected override void OnInitialized()
+    {
+        if (IngresosId > 0)
+        {
+            this.ingresos.IngresosId = IngresosId;
+            this.Buscar();
+        }
+    }
+
+    void Buscar()
+    {
+        var ingresosEncontrado = ingresosBLL.Buscar(ingresos.IngresosId);
+
+        if (ingresosEncontrado != null)
+            this.ingresos = ingresosEncontrado;
+    }
+    void Nuevo()
+    {
+        this.ingresos = new();
+        ingresosIdMenorCero = false;
+        conceptoRepetido = false;
+        montoMenorCero = false;
+    }
+    void Guardar()
+    {
+        if (!Validar() && ingresosBLL.Guardar(this.ingresos))
+        {
+            this.Nuevo();
+            var mensaje = new NotificationMessage
+                {
+                    Severity = NotificationSeverity.Success,
+                    Summary = "Guardado",
+                    Detail = "Se ha guardado el ingreso",
+                    Duration = 4_000
+                };
+            notificationService.Notify(mensaje);
+        }
+        else
+        {
+            if (conceptoRepetido)
+            {
+                var mensaje = new NotificationMessage
+                    {
+                        Severity = NotificationSeverity.Error,
+                        Summary = "El concepto repetido",
+                        Detail = "EL concepto que estas intentando registrar, ya se encuentra registrado",
+                        Duration = 6_000
+                    };
+                notificationService.Notify(mensaje);
+            }
+
+            if (ingresosIdMenorCero)
+            {
+                var mensaje = new NotificationMessage
+                    {
+                        Severity = NotificationSeverity.Error,
+                        Summary = "Error ID",
+                        Detail = "No se puede introducir un ID menor a 0, le recomendamos precinar nuevo y no tocar el ID",
+                        Duration = 6_000
+                    };
+                notificationService.Notify(mensaje);
+            }
+
+
+            if (montoMenorCero)
+            {
+                var mensaje = new NotificationMessage
+                    {
+                        Severity = NotificationSeverity.Error,
+                        Summary = "Error Monto",
+                        Detail = "El monot debe ser mayo 0",
+                        Duration = 6_000
+                    };
+                notificationService.Notify(mensaje);
+            }
+        }
+
+    }
+    void Eliminar()
+    {
+        ingresosBLL.Eliminar(this.ingresos);
+        this.Nuevo();
+        var Mensaje = new NotificationMessage
+            {
+                Severity = NotificationSeverity.Success,
+                Summary = "Eliminado",
+                Detail = "Se ha eliminado el ingreso",
+                Duration = 4_000
+            };
+        notificationService.Notify(Mensaje);
+    }
+    bool Validar()
+    {
+        ingresosIdMenorCero = ingresos.IngresosId < 0;
+        conceptoRepetido = ingresosBLL.GetList(i => i.Concepto == ingresos.Concepto && i.IngresosId != ingresos.IngresosId).Any();
+        montoMenorCero = ingresos.Monto <= 0; 
+        return ingresosIdMenorCero || conceptoRepetido || montoMenorCero;
+    }
+}
