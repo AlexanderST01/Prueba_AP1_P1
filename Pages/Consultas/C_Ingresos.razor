@@ -63,9 +63,17 @@
 
 @code {
     public List<Ingresos> ingresos { get; set; } = new();
+<<<<<<< HEAD
     public int ID;
     public DateTime fechaDede; 
     public DateTime fechaHasta;   
+=======
+    public DateTime fechaDede;
+    public DateTime fechaHasta;
+    public Ingresos ingresoAuxiliar = new();
+    public int opciones;
+    public decimal montoTotal;
+>>>>>>> 4802139 (Arreglando identacion y legibilidad de consulta y registro)
 
     protected override void OnInitialized()
     {

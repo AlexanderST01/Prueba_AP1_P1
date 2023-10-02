@@ -8,7 +8,7 @@
     <DataAnnotationsValidator />
     <div class="card col-8">
         <div class="card-header">
-             <div class="row">
+            <div class="row">
                 <div class="col-3">
                     <InputNumber class="form-control" @bind-Value="ingresos.IngresosId"></InputNumber>
                 </div>
@@ -20,22 +20,22 @@
         <div class="card-body">
             <div class="form-group">
                 <label>Fecha</label>
-                <InputDate @bind-Value="ingresos.Fecha" class="form-control" ></InputDate>
+                <InputDate @bind-Value="ingresos.Fecha" class="form-control"></InputDate>
                 <ValidationMessage For="@(() => ingresos.Fecha)" />
             </div>
             <div class="form-group">
                 <label>Concepto</label>
-                <InputTextArea @bind-Value="ingresos.Concepto" class="form-control" ></InputTextArea>
+                <InputTextArea @bind-Value="ingresos.Concepto" class="form-control"></InputTextArea>
                 <ValidationMessage For="@(() => ingresos.Concepto)" />
             </div>
             <div class="form-group">
-                <label >Monto</label>
-                <InputNumber  @bind-Value="ingresos.Monto" class="form-control" ></InputNumber>
+                <label>Monto</label>
+                <InputNumber @bind-Value="ingresos.Monto" class="form-control"></InputNumber>
                 <ValidationMessage For="@(() => ingresos.Monto)" />
-            </div> 
+            </div>
         </div>
         <div class="card-footer">
-            <button class="btn btn-info" @onclick= "Nuevo" type="button">Nuevo</button>
+            <button class="btn btn-info" @onclick="Nuevo" type="button">Nuevo</button>
             <button class="btn btn-success" type="submit">Guardar</button>
             <button class="btn btn-danger" @onclick="Eliminar" type="button">Eliminar</button>
         </div>
@@ -44,11 +44,11 @@
 @code {
     [Parameter]
     public int IngresosId { get; set; }
-    public int options { get; set; }
     public Ingresos ingresos = new();
     public bool ingresosIdMenorCero = false;
     public bool conceptoRepetido = false;
     public bool montoMenorCero = false;
+    public bool hayNulo = false;
 
     protected override void OnInitialized()
     {
@@ -58,7 +58,6 @@
             this.Buscar();
         }
     }
-
     void Buscar()
     {
         var ingresosEncontrado = ingresosBLL.Buscar(ingresos.IngresosId);
@@ -72,6 +71,7 @@
         ingresosIdMenorCero = false;
         conceptoRepetido = false;
         montoMenorCero = false;
+        hayNulo = false;
     }
     void Guardar()
     {
@@ -120,7 +120,7 @@
                     {
                         Severity = NotificationSeverity.Error,
                         Summary = "Error Monto",
-                        Detail = "El monot debe ser mayo 0",
+                        Detail = "El monto debe ser mayor 0",
                         Duration = 6_000
                     };
                 notificationService.Notify(mensaje);
@@ -130,22 +130,26 @@
     }
     void Eliminar()
     {
-        ingresosBLL.Eliminar(this.ingresos);
-        this.Nuevo();
-        var Mensaje = new NotificationMessage
-            {
-                Severity = NotificationSeverity.Success,
-                Summary = "Eliminado",
-                Detail = "Se ha eliminado el ingreso",
-                Duration = 4_000
-            };
-        notificationService.Notify(Mensaje);
+        if (!Validar())
+        {
+            ingresosBLL.Eliminar(this.ingresos);
+            this.Nuevo();
+            var Mensaje = new NotificationMessage
+                {
+                    Severity = NotificationSeverity.Success,
+                    Summary = "Eliminado",
+                    Detail = "Se ha eliminado el ingreso",
+                    Duration = 4_000
+                };
+            notificationService.Notify(Mensaje);
+        }
     }
     bool Validar()
     {
         ingresosIdMenorCero = ingresos.IngresosId < 0;
         conceptoRepetido = ingresosBLL.GetList(i => i.Concepto == ingresos.Concepto && i.IngresosId != ingresos.IngresosId).Any();
-        montoMenorCero = ingresos.Monto <= 0; 
+        montoMenorCero = ingresos.Monto <= 0;
+        //hayNulo = string.IsNullOrEmpty(ingresos.Concepto) || ingresos.Monto <= 0 || ingresos.IngresosId <= 0;
         return ingresosIdMenorCero || conceptoRepetido || montoMenorCero;
     }
 }
